@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CT Head Decision Tool For Trauma - Paediatric (Under 16) - Based on NICE Guidelines</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .slide-enter {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        .slide-active {
+            transform: translateX(0);
+            opacity: 1;
+            transition: all 0.3s ease-in-out;
+        }
+        .slide-exit {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+        .progress-bar {
+            transition: width 0.3s ease-in-out;
+        }
+        .decision-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .decision-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .decision-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .decision-card.disabled:hover {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .decision-card.highlighted {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+            border-color: #3B82F6 !important;
+        }
+        .risk-factor-item {
+            transition: all 0.2s ease-in-out;
+            border-left: 4px solid transparent;
+        }
+        .risk-factor-item:hover {
+            border-left: 4px solid #3B82F6;
+            background-color: #F8FAFC;
+        }
+        .recommendation-urgent {
+            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+            border: 2px solid #EF4444;
+        }
+        .recommendation-consider {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            border: 2px solid #F59E0B;
+        }
+        .recommendation-observe {
+            background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+            border: 2px solid #10B981;
+        }
+        .recommendation-no-scan {
+            background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%);
+            border: 2px solid #6366F1;
+        }
+        .persistent-restart-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease-in-out;
+        }
+        .persistent-restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        @media (max-width: 768px) {
+            .persistent-restart-btn {
+                bottom: 15px;
+                right: 15px;
+                padding: 12px 16px;
+            }
+        }
+        body {
+            padding-bottom: 80px;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+
+        /* Frosted Glass Password Screen Styles */
+        .password-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(147, 51, 234, 0.8) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .password-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .password-input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            width: 100%;
+            margin: 1.5rem 0;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .password-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .password-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .password-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .password-error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .main-app {
+            display: none;
+        }
+
+        .main-app.authenticated {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Password Protection Screen -->
+    <div id="password-screen" class="password-screen">
+        <div class="password-card">
+            <div class="mb-6">
+                <i class="fas fa-shield-alt text-6xl text-white mb-4"></i>
+                <h1 class="text-3xl font-bold text-white mb-2">Secure Access Required</h1>
+                <p class="text-white text-opacity-80">CT Head Decision Tool for Trauma</p>
+                <p class="text-white text-opacity-60 text-sm mt-1">Paediatric Patients (Under 16) - Based on NICE Guidelines</p>
+            </div>
+            
+            <div>
+                <input 
+                    type="password" 
+                    id="password-input" 
+                    class="password-input" 
+                    placeholder="Enter access code" 
+                    maxlength="10"
+                    onkeypress="handlePasswordKeyPress(event)"
+                />
+                <button onclick="validatePassword()" class="password-button">
+                    <i class="fas fa-unlock mr-2"></i>Access Tool
+                </button>
+                <div id="password-error" class="password-error" style="display: none;"></div>
+            </div>
+            
+            <div class="mt-6 text-white text-opacity-60 text-xs">
+                <i class="fas fa-info-circle mr-1"></i>
+                For authorized healthcare professionals only
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="main-app" class="main-app min-h-screen">
+        <!-- Header -->
+        <header class="bg-blue-800 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold flex items-center">
+                            <i class="fas fa-brain mr-3"></i>
+                            CT Head Decision Tool For Trauma
+                        </h1>
+                        <p class="text-blue-200 mt-1">Based on NICE Guidelines - Paediatric Patients (Under 16)</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-blue-200">Based on NICE Guidelines</div>
+                        <div class="text-xs text-blue-300">Children & Young People</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Progress Bar -->
+        <div class="bg-white shadow-sm">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
+                    <span>Assessment Progress</span>
+                    <span id="step-counter">Step 1 of 6</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progress-bar" class="progress-bar bg-blue-600 h-2 rounded-full" style="width: 16.7%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-6">
+            <div class="max-w-4xl mx-auto">
+                
+                <!-- Step 1: Welcome -->
+                <div id="step-1" class="step active">
+                    <div class="bg-white rounded-lg shadow-lg p-6 md:p-8 text-center">
+                        <div class="mb-6">
+                            <i class="fas fa-user-md text-6xl text-blue-600 mb-4"></i>
+                            <h2 class="text-3xl font-bold text-gray-800 mb-4">CT Head Imaging Assessment For Trauma</h2>
+                            <p class="text-lg text-gray-600 mb-2">Based on NICE Guidelines for Children & Young People Under 16 Years</p>
+                            <p class="text-sm text-gray-500">Algorithm 2: Selecting people under 16 for a CT head scan</p>
+                        </div>
+                        
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                            <div class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-red-500 mt-1 mr-3"></i>
+                                <div class="text-left">
+                                    <h3 class="font-semibold text-red-800 mb-2">Important Notice</h3>
+                                    <p class="text-red-700 text-sm">This tool is for healthcare professionals only. It should be used alongside clinical judgement and does not replace professional medical assessment.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Patient Criteria</h3>
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <div class="flex items-center justify-center mb-2">
+                                    <i class="fas fa-child text-blue-600 mr-2"></i>
+                                    <span class="font-medium text-blue-800">Patient under 16 years old</span>
+                                </div>
+                                <div class="flex items-center justify-center">
+                                    <i class="fas fa-ambulance text-blue-600 mr-2"></i>
+                                    <span class="font-medium text-blue-800">Presenting to ED with head injury</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="startAssessment()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 shadow-md">
+                            <i class="fas fa-play mr-2"></i>Start Assessment
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: High Risk Factors -->
+                <div id="step-2" class="step">
+                    <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                            High-Risk Factors Assessment
+                        </h2>
+                        
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                            <p class="text-red-800 font-medium mb-2">Are ANY of these high-risk factors present?</p>
+                            <p class="text-red-600 text-sm">If any factor is present, CT head scan is required within 1 hour</p>
+                        </div>
+                        
+                        <div class="space-y-3 mb-8">
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-shield-alt text-red-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">Suspicion of non-accidental injury</span>
+                                        <p class="text-sm text-gray-600 mt-1">Clinical concern for intentional harm</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-bolt text-red-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">Post-traumatic seizure (no history of epilepsy)</span>
+                                        <p class="text-sm text-gray-600 mt-1">New seizure activity following head injury</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-brain text-red-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">GCS score less than 14 on initial assessment (or GCS paediatric score less than 15 for children under 1 year)</span>
+                                        <p class="text-sm text-gray-600 mt-1">Altered level of consciousness - age-appropriate criteria</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-clock text-red-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">GCS score less than 15 at 2 hours after injury</span>
+                                        <p class="text-sm text-gray-600 mt-1">Persistent altered consciousness</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-user-injured text-red-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">Suspected open or depressed skull fracture, or tense fontanelle</span>
+                                        <p class="text-sm text-gray-600 mt-1">Visible skull damage or increased intracranial pressure</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-eye text-red-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">Signs of basal skull fracture</span>
+                                        <p class="text-sm text-gray-600 mt-1">Haemotympanum, 'panda' eyes, CSF leak, Battle's sign</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-hand-paper text-red-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">Focal neurological deficit</span>
+                                        <p class="text-sm text-gray-600 mt-1">Localised neurological symptoms or signs</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-yellow-50 border-l-4 border-yellow-500">
+                                <div class="flex items-start">
+                                    <i class="fas fa-baby text-yellow-600 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-yellow-800">For children under 1 year: Bruise, swelling or laceration > 5 cm on head</span>
+                                        <p class="text-sm text-yellow-700 mt-1">Significant scalp injury in infants</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <button onclick="setHighRisk(true)" class="decision-card bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-check-circle text-red-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-red-800">YES</div>
+                                <div class="text-sm text-red-600">High-risk factors present</div>
+                            </button>
+                            
+                            <button onclick="setHighRisk(false)" class="decision-card bg-green-50 hover:bg-green-100 border-2 border-green-200 hover:border-green-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-times-circle text-green-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-green-800">NO</div>
+                                <div class="text-sm text-green-600">No high-risk factors</div>
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between">
+                            <button onclick="goToPreviousStep()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200">
+                                <i class="fas fa-arrow-left mr-2"></i>Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Secondary Risk Factors -->
+                <div id="step-3" class="step">
+                    <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-list-ul text-orange-600 mr-3"></i>
+                            Secondary Risk Factors Assessment
+                        </h2>
+                        
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                            <p class="text-orange-800 font-medium mb-2">Review the secondary risk factors below and select your assessment</p>
+                            <p class="text-orange-600 text-sm">You may tick factors for reference, then choose the appropriate action below</p>
+                        </div>
+                        
+                        <div class="space-y-3 mb-8">
+                            <label class="risk-factor-item p-4 rounded-lg bg-gray-50 cursor-pointer flex items-start hover:bg-blue-50">
+                                <input type="checkbox" class="secondary-risk mt-2 mr-3" value="loc" onchange="updateSecondaryRiskButtons()">
+                                <div>
+                                    <span class="font-medium text-gray-800">Loss of consciousness lasting more than 5 minutes (witnessed)</span>
+                                    <p class="text-sm text-gray-600 mt-1">Witnessed prolonged unconsciousness</p>
+                                </div>
+                            </label>
+                            
+                            <label class="risk-factor-item p-4 rounded-lg bg-gray-50 cursor-pointer flex items-start hover:bg-blue-50">
+                                <input type="checkbox" class="secondary-risk mt-2 mr-3" value="bleeding" onchange="updateSecondaryRiskButtons()">
+                                <div>
+                                    <span class="font-medium text-gray-800">Bleeding or clotting disorders</span>
+                                    <p class="text-sm text-gray-600 mt-1">Liver failure, haemophilia, anticoagulants, antiplatelets</p>
+                                </div>
+                            </label>
+                            
+                            <label class="risk-factor-item p-4 rounded-lg bg-gray-50 cursor-pointer flex items-start hover:bg-blue-50">
+                                <input type="checkbox" class="secondary-risk mt-2 mr-3" value="drowsiness" onchange="updateSecondaryRiskButtons()">
+                                <div>
+                                    <span class="font-medium text-gray-800">Abnormal drowsiness</span>
+                                    <p class="text-sm text-gray-600 mt-1">Unusual or excessive drowsiness</p>
+                                </div>
+                            </label>
+                            
+                            <label class="risk-factor-item p-4 rounded-lg bg-gray-50 cursor-pointer flex items-start hover:bg-blue-50">
+                                <input type="checkbox" class="secondary-risk mt-2 mr-3" value="vomiting" onchange="updateSecondaryRiskButtons()">
+                                <div>
+                                    <span class="font-medium text-gray-800">3 or more discrete episodes of vomiting</span>
+                                    <p class="text-sm text-gray-600 mt-1">Multiple separate vomiting episodes</p>
+                                </div>
+                            </label>
+                            
+                            <label class="risk-factor-item p-4 rounded-lg bg-gray-50 cursor-pointer flex items-start hover:bg-blue-50">
+                                <input type="checkbox" class="secondary-risk mt-2 mr-3" value="mechanism" onchange="updateSecondaryRiskButtons()">
+                                <div>
+                                    <span class="font-medium text-gray-800">Dangerous mechanism of injury</span>
+                                    <p class="text-sm text-gray-600 mt-1">High-speed RTA, fall >3m, high-speed projectile</p>
+                                </div>
+                            </label>
+                            
+                            <label class="risk-factor-item p-4 rounded-lg bg-gray-50 cursor-pointer flex items-start hover:bg-blue-50">
+                                <input type="checkbox" class="secondary-risk mt-2 mr-3" value="amnesia" onchange="updateSecondaryRiskButtons()">
+                                <div>
+                                    <span class="font-medium text-gray-800">Amnesia lasting more than 5 minutes</span>
+                                    <p class="text-sm text-gray-600 mt-1">Antegrade or retrograde (not assessable in preverbal/under-5)</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                            <p class="text-blue-800 font-medium mb-2">Please select the appropriate action based on your assessment:</p>
+                        </div>
+                        
+                        <div class="grid gap-4 md:gap-6">
+                            <button id="btn-multiple" onclick="setSecondaryRisk('multiple')" class="decision-card bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-exclamation-circle text-red-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-red-800">More Than One Factor</div>
+                                <div class="text-sm text-red-600">Multiple secondary risk factors present → CT within 1 hour</div>
+                            </button>
+                            
+                            <button id="btn-single" onclick="setSecondaryRisk('single')" class="decision-card bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 hover:border-orange-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-clock text-orange-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-orange-800">Just One Factor</div>
+                                <div class="text-sm text-orange-600">Single secondary risk factor present → Proceed to observation</div>
+                            </button>
+                            
+                            <button id="btn-none" onclick="setSecondaryRisk('none')" class="decision-card bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-200 hover:border-indigo-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-check-circle text-indigo-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-indigo-800">No Factors</div>
+                                <div class="text-sm text-indigo-600">No secondary risk factors present → No CT needed</div>
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between">
+                            <button onclick="goToPreviousStep()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200">
+                                <i class="fas fa-arrow-left mr-2"></i>Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Observation Period -->
+                <div id="step-4" class="step">
+                    <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-eye text-blue-600 mr-3"></i>
+                            Observation Period Assessment
+                        </h2>
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                            <p class="text-blue-800 font-medium mb-2">Observe for at least 4 hours after the head injury</p>
+                            <p class="text-blue-600 text-sm">Monitor for development of concerning symptoms during observation</p>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-6">During the 4-hour observation period, are ANY of these risk factors present?</p>
+                        
+                        <div class="space-y-4 mb-8">
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-brain text-blue-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">GCS score of less than 15</span>
+                                        <p class="text-sm text-gray-600 mt-1">Deterioration in consciousness level</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-dizzy text-blue-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">Further vomiting</span>
+                                        <p class="text-sm text-gray-600 mt-1">New episodes of vomiting during observation</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-factor-item p-4 rounded-lg bg-gray-50">
+                                <div class="flex items-start">
+                                    <i class="fas fa-bed text-blue-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="font-medium text-gray-800">Further episodes of abnormal drowsiness</span>
+                                        <p class="text-sm text-gray-600 mt-1">Continued abnormal/excessive drowsiness</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <button onclick="setObservationRisk(true)" class="decision-card bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 hover:border-orange-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-check-circle text-orange-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-orange-800">YES</div>
+                                <div class="text-sm text-orange-600">Risk factors developed</div>
+                            </button>
+                            
+                            <button onclick="setObservationRisk(false)" class="decision-card bg-green-50 hover:bg-green-100 border-2 border-green-200 hover:border-green-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-times-circle text-green-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-green-800">NO</div>
+                                <div class="text-sm text-green-600">No new risk factors</div>
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between">
+                            <button onclick="goToPreviousStep()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200">
+                                <i class="fas fa-arrow-left mr-2"></i>Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Anticoagulation Assessment -->
+                <div id="step-5" class="step">
+                    <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-pills text-purple-600 mr-3"></i>
+                            Anticoagulation & Antiplatelet Assessment
+                        </h2>
+                        
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+                            <p class="text-purple-800 font-medium mb-2">Are they taking anticoagulants or antiplatelets?</p>
+                            <p class="text-purple-600 text-sm">This affects bleeding risk and scan timing requirements</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                            <h3 class="font-semibold text-gray-800 mb-3">Anticoagulants include:</h3>
+                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                                <li>• Vitamin K antagonists (e.g., warfarin)</li>
+                                <li>• Direct-acting oral anticoagulants (DOACs)</li>
+                                <li>• Heparin and low molecular weight heparins</li>
+                            </ul>
+                            
+                            <h3 class="font-semibold text-gray-800 mb-3 mt-4">Antiplatelets include:</h3>
+                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                                <li>• Clopidogrel, dipyridamole, etc.</li>
+                                <li>• <strong>Excluding aspirin monotherapy</strong></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <button onclick="setAnticoagulation(true)" class="decision-card bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-check-circle text-red-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-red-800">YES</div>
+                                <div class="text-sm text-red-600">Taking anticoagulants/antiplatelets</div>
+                            </button>
+                            
+                            <button onclick="setAnticoagulation(false)" class="decision-card bg-green-50 hover:bg-green-100 border-2 border-green-200 hover:border-green-400 p-6 rounded-lg text-center transition duration-200">
+                                <i class="fas fa-times-circle text-green-600 text-2xl mb-2"></i>
+                                <div class="font-semibold text-green-800">NO</div>
+                                <div class="text-sm text-green-600">Not taking relevant medications</div>
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between">
+                            <button onclick="goToPreviousStep()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200">
+                                <i class="fas fa-arrow-left mr-2"></i>Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 6: Final Recommendation -->
+                <div id="step-6" class="step">
+                    <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-clipboard-check text-green-600 mr-3"></i>
+                            Clinical Recommendation
+                        </h2>
+                        
+                        <div id="recommendation-content" class="mb-8">
+                            <!-- Recommendation will be populated by JavaScript -->
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                            <h3 class="font-semibold text-gray-800 mb-2 flex items-center">
+                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                Important Notes
+                            </h3>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• All CT scans require provisional written radiology report within 1 hour</li>
+                                <li>• Use clinical judgement to determine further observation needs</li>
+                                <li>• This tool supports but does not replace clinical assessment</li>
+                                <li>• Consider patient-specific factors and clinical context</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button onclick="restartAssessment()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md flex-1">
+                                <i class="fas fa-redo mr-2"></i>New Assessment
+                            </button>
+                            
+                            <button onclick="printResults()" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md flex-1">
+                                <i class="fas fa-print mr-2"></i>Print Results
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between">
+                            <button onclick="goToPreviousStep()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200">
+                                <i class="fas fa-arrow-left mr-2"></i>Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Persistent Restart Button -->
+        <button onclick="restartAssessment()" class="persistent-restart-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300" title="Restart Assessment">
+            <i class="fas fa-redo mr-2"></i>
+            <span class="hidden sm:inline">Restart Assessment</span>
+            <span class="sm:hidden">Restart</span>
+        </button>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-6 mt-12">
+            <div class="container mx-auto px-4 text-center">
+                <div class="flex items-center justify-center mb-2">
+                    <i class="fas fa-shield-alt mr-2"></i>
+                    <span class="font-semibold">Based on NICE Guidelines</span>
+                </div>
+                <p class="text-gray-400 text-sm">Clinical Decision Support Tool - For Healthcare Professionals Only</p>
+                <p class="text-gray-500 text-xs mt-2">This tool is for guidance only and should be used alongside clinical judgement</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Password protection
+        const correctPassword = "bched";
+
+        function handlePasswordKeyPress(event) {
+            if (event.key === 'Enter') {
+                validatePassword();
+            }
+        }
+
+        function validatePassword() {
+            const passwordInput = document.getElementById('password-input');
+            const errorDiv = document.getElementById('password-error');
+            const password = passwordInput.value.trim();
+
+            if (password === correctPassword) {
+                // Correct password - hide password screen and show main app
+                document.getElementById('password-screen').style.display = 'none';
+                document.getElementById('main-app').classList.add('authenticated');
+                initializeApp();
+            } else {
+                // Incorrect password - show error
+                errorDiv.textContent = 'Incorrect access code. Please try again.';
+                errorDiv.style.display = 'block';
+                passwordInput.value = '';
+                passwordInput.focus();
+                
+                // Hide error after 3 seconds
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Application state
+        let currentStep = 1;
+        let totalSteps = 6;
+        let navigationHistory = []; // Track steps visited
+        
+        let assessmentData = {
+            highRiskFactors: null,
+            secondaryRiskFactors: [],
+            secondaryRiskCount: 0,
+            secondaryRiskDecision: null,
+            observationRisk: null,
+            anticoagulation: null,
+            recommendation: null
+        };
+
+        // Scroll to top function
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Initialize the application
+        function initializeApp() {
+            currentStep = 1;
+            navigationHistory = [1];
+            updateProgressBar();
+            updateStepCounter();
+            showStep(currentStep);
+            scrollToTop();
+        }
+
+        // Clean step transition function
+        function showStep(stepNumber) {
+            // Hide all steps
+            const allSteps = document.querySelectorAll('.step');
+            allSteps.forEach(step => {
+                step.classList.remove('active');
+                step.style.display = 'none';
+            });
+            
+            // Show the target step
+            const targetStep = document.getElementById(`step-${stepNumber}`);
+            if (targetStep) {
+                targetStep.style.display = 'block';
+                targetStep.classList.add('active');
+            }
+            
+            // Scroll to top
+            scrollToTop();
+        }
+
+        // Start assessment function - goes directly to high-risk factors
+        function startAssessment() {
+            currentStep = 2;
+            navigationHistory = [1, 2];
+            showStep(currentStep);
+            updateProgressBar();
+            updateStepCounter();
+        }
+
+        // Navigation functions
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                navigationHistory.push(currentStep);
+                showStep(currentStep);
+                updateProgressBar();
+                updateStepCounter();
+            }
+        }
+
+        function goToPreviousStep() {
+            if (navigationHistory.length > 1) {
+                navigationHistory.pop(); // Remove current step
+                currentStep = navigationHistory[navigationHistory.length - 1];
+                showStep(currentStep);
+                updateProgressBar();
+                updateStepCounter();
+            }
+        }
+
+        function jumpToStep(stepNumber) {
+            currentStep = stepNumber;
+            navigationHistory.push(currentStep);
+            showStep(currentStep);
+            updateProgressBar();
+            updateStepCounter();
+        }
+
+        function updateProgressBar() {
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) {
+                const progress = (currentStep / totalSteps) * 100;
+                progressBar.style.width = progress + '%';
+            }
+        }
+
+        function updateStepCounter() {
+            const stepCounter = document.getElementById('step-counter');
+            if (stepCounter) {
+                stepCounter.textContent = `Step ${currentStep} of ${totalSteps}`;
+            }
+        }
+
+        // Update secondary risk factor buttons based on selections
+        function updateSecondaryRiskButtons() {
+            const checkedBoxes = document.querySelectorAll('.secondary-risk:checked');
+            const checkedCount = checkedBoxes.length;
+            
+            const btnMultiple = document.getElementById('btn-multiple');
+            const btnSingle = document.getElementById('btn-single');
+            const btnNone = document.getElementById('btn-none');
+            
+            // Reset all buttons
+            btnMultiple.classList.remove('disabled', 'highlighted');
+            btnSingle.classList.remove('disabled', 'highlighted');
+            btnNone.classList.remove('disabled', 'highlighted');
+            
+            // Update button states based on selected factors
+            if (checkedCount >= 2) {
+                // More than one factor selected - highlight multiple, disable single and none
+                btnMultiple.classList.add('highlighted');
+                btnSingle.classList.add('disabled');
+                btnNone.classList.add('disabled');
+            } else if (checkedCount === 1) {
+                // One factor selected - highlight single, disable multiple and none
+                btnSingle.classList.add('highlighted');
+                btnMultiple.classList.add('disabled');
+                btnNone.classList.add('disabled');
+            } else {
+                // No factors selected - highlight none, disable others
+                btnNone.classList.add('highlighted');
+                btnMultiple.classList.add('disabled');
+                btnSingle.classList.add('disabled');
+            }
+        }
+
+        // Assessment functions
+        function setHighRisk(hasHighRisk) {
+            assessmentData.highRiskFactors = hasHighRisk;
+            
+            if (hasHighRisk) {
+                // High-risk patients get immediate CT
+                assessmentData.recommendation = 'urgent';
+                jumpToStep(6);
+                showRecommendation();
+            } else {
+                nextStep();
+            }
+        }
+
+        function setSecondaryRisk(decision) {
+            // Check if button is disabled
+            const btnId = 'btn-' + (decision === 'multiple' ? 'multiple' : decision === 'single' ? 'single' : 'none');
+            const btn = document.getElementById(btnId);
+            if (btn && btn.classList.contains('disabled')) {
+                return; // Don't proceed if button is disabled
+            }
+            
+            assessmentData.secondaryRiskDecision = decision;
+            
+            // Still capture selected checkboxes for reference
+            const checkboxes = document.querySelectorAll('.secondary-risk:checked');
+            assessmentData.secondaryRiskFactors = Array.from(checkboxes).map(cb => cb.value);
+            assessmentData.secondaryRiskCount = checkboxes.length;
+            
+            if (decision === 'multiple') {
+                // More than one secondary risk factor = urgent CT within 1 hour
+                assessmentData.recommendation = 'urgent';
+                jumpToStep(6);
+                showRecommendation();
+            } else if (decision === 'single') {
+                // Single secondary risk factor = proceed to observation
+                nextStep();
+            } else if (decision === 'none') {
+                // No secondary risk factors = go directly to no CT needed
+                assessmentData.recommendation = 'no-scan';
+                jumpToStep(6);
+                showRecommendation();
+            }
+        }
+
+        function setObservationRisk(hasObservationRisk) {
+            assessmentData.observationRisk = hasObservationRisk;
+            
+            if (hasObservationRisk) {
+                // Risk factors developed during observation = urgent CT
+                assessmentData.recommendation = 'urgent';
+                jumpToStep(6);
+                showRecommendation();
+            } else {
+                nextStep();
+            }
+        }
+
+        function setAnticoagulation(isAnticoagulated) {
+            assessmentData.anticoagulation = isAnticoagulated;
+            
+            if (isAnticoagulated) {
+                assessmentData.recommendation = 'anticoagulant';
+            } else {
+                assessmentData.recommendation = 'no-scan';
+            }
+            
+            jumpToStep(6);
+            showRecommendation();
+        }
+
+        function showRecommendation() {
+            const recommendationContent = document.getElementById('recommendation-content');
+            if (!recommendationContent) return;
+            
+            let content = '';
+
+            switch (assessmentData.recommendation) {
+                case 'urgent':
+                    content = `
+                        <div class="recommendation-urgent p-6 rounded-lg mb-4">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-exclamation-circle text-red-600 text-3xl mr-4"></i>
+                                <div>
+                                    <h3 class="text-xl font-bold text-red-800">CT Head Scan Required Within 1 Hour</h3>
+                                    <p class="text-red-700">Urgent imaging indicated</p>
+                                </div>
+                            </div>
+                            <div class="bg-white bg-opacity-50 rounded p-4">
+                                <h4 class="font-semibold text-red-800 mb-2">Actions Required:</h4>
+                                <ul class="text-red-700 text-sm space-y-1">
+                                    <li>• Perform CT head scan within 1 hour of risk factor identification</li>
+                                    <li>• Ensure provisional written radiology report available within 1 hour of scan</li>
+                                    <li>• Continue appropriate clinical monitoring</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'consider':
+                    content = `
+                        <div class="recommendation-consider p-6 rounded-lg mb-4">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-clock text-orange-600 text-3xl mr-4"></i>
+                                <div>
+                                    <h3 class="text-xl font-bold text-orange-800">Consider CT Head Scan Within 8 Hours</h3>
+                                    <p class="text-orange-700">Delayed imaging may be appropriate</p>
+                                </div>
+                            </div>
+                            <div class="bg-white bg-opacity-50 rounded p-4">
+                                <h4 class="font-semibold text-orange-800 mb-2">Actions Required:</h4>
+                                <ul class="text-orange-700 text-sm space-y-1">
+                                    <li>• Consider CT head scan within 8 hours of injury</li>
+                                    <li>• If presenting >8 hours post-injury, scan within 1 hour</li>
+                                    <li>• Ensure provisional written radiology report available within 1 hour of scan</li>
+                                    <li>• Continue clinical observation and monitoring</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'anticoagulant':
+                    content = `
+                        <div class="recommendation-consider p-6 rounded-lg mb-4">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-pills text-orange-600 text-3xl mr-4"></i>
+                                <div>
+                                    <h3 class="text-xl font-bold text-orange-800">Consider CT Head Scan - Patients Taking Anticoagulants or Antiplatelets</h3>
+                                    <p class="text-orange-700">Special timing considerations for patients taking anticoagulants or antiplatelets</p>
+                                </div>
+                            </div>
+                            <div class="bg-white bg-opacity-50 rounded p-4">
+                                <h4 class="font-semibold text-orange-800 mb-2">Actions Required:</h4>
+                                <ul class="text-orange-700 text-sm space-y-1">
+                                    <li>• Consider CT head scan within 8 hours of injury</li>
+                                    <li>• If presenting more than 8 hours after injury, scan within 1 hour</li>
+                                    <li>• Make provisional written radiology report available within 1 hour of scan</li>
+                                    <li>• Continue clinical observation and monitoring</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'no-scan':
+                    content = `
+                        <div class="recommendation-no-scan p-6 rounded-lg mb-4">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-check-circle text-indigo-600 text-3xl mr-4"></i>
+                                <div>
+                                    <h3 class="text-xl font-bold text-indigo-800">CT Head Scan Not Needed</h3>
+                                    <p class="text-indigo-700">Clinical observation recommended</p>
+                                </div>
+                            </div>
+                            <div class="bg-white bg-opacity-50 rounded p-4">
+                                <h4 class="font-semibold text-indigo-800 mb-2">Actions Required:</h4>
+                                <ul class="text-indigo-700 text-sm space-y-1">
+                                    <li>• CT head scan not required based on current assessment</li>
+                                    <li>• Use clinical judgement to determine observation duration</li>
+                                    <li>• Monitor for development of new symptoms</li>
+                                    <li>• Reassess if clinical condition changes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+
+            // Add assessment summary
+            content += `
+                <div class="bg-gray-50 rounded-lg p-4 mt-4">
+                    <h4 class="font-semibold text-gray-800 mb-2">Assessment Summary:</h4>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <div>Patient Age: Under 16 years (combined assessment criteria)</div>
+                        <div>High-Risk Factors: ${assessmentData.highRiskFactors ? 'Present' : 'Absent'}</div>
+                        <div>Secondary Risk Factors Decision: ${assessmentData.secondaryRiskDecision ? assessmentData.secondaryRiskDecision.charAt(0).toUpperCase() + assessmentData.secondaryRiskDecision.slice(1) : 'Not assessed'}</div>
+                        <div>Observation Risk Factors: ${assessmentData.observationRisk !== null ? (assessmentData.observationRisk ? 'Present' : 'Absent') : 'Not assessed'}</div>
+                        <div>Anticoagulation/Antiplatelet: ${assessmentData.anticoagulation !== null ? (assessmentData.anticoagulation ? 'Yes' : 'No') : 'Not assessed'}</div>
+                    </div>
+                </div>
+            `;
+
+            recommendationContent.innerHTML = content;
+        }
+
+        function restartAssessment() {
+            // Reset all data
+            assessmentData = {
+                highRiskFactors: null,
+                secondaryRiskFactors: [],
+                secondaryRiskCount: 0,
+                secondaryRiskDecision: null,
+                observationRisk: null,
+                anticoagulation: null,
+                recommendation: null
+            };
+
+            // Clear checkboxes
+            document.querySelectorAll('.secondary-risk').forEach(cb => cb.checked = false);
+            
+            // Reset button states
+            updateSecondaryRiskButtons();
+
+            // Reset to first step
+            currentStep = 1;
+            navigationHistory = [1];
+            showStep(currentStep);
+            updateProgressBar();
+            updateStepCounter();
+        }
+
+        function printResults() {
+            window.print();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus on password input when page loads
+            document.getElementById('password-input').focus();
+        });
+    </script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDk%2B3k1rWeyrdrn4iOYwOQkguU9%2FgnsxhXcjZhDZ%2FZ3wiONVwAaiZsnw2H9Cmo6r5sPIhPg9zVEJFqqKI0bhglWJPlhM656R%2BI3%2F4oLmgPu7Bf4kVFOztE6J2AL6SWz60w9GU8bblm290lv55ebV8hPHESrv66KlTbI1IyoUhEFPz4rtZHfhlTVmQRwDm70Kx7BB2t3socliO6Q%2FCKEVh%2F2dbxYLOnrRQWbD6QhcFpOrSHWFueJbqemb7C7xD1ipDQfL7ucfmnVkXIcAHV8wVjkDTA0d6GlmeE%2FDchH7Nd5X5Lwy%2B2EW2pMTlN1BUpEFylkGQ5i5QKC5ucDRV1h3R0XSsQracFoMGxrSf3QXOMCu9gveIxswLGwiJ3NWCrwgLyf8verNXmZwiaYtmJUvK4BhmJYM7YxSoAh0Eor6XmBZ6H8INLY7lc6G05sWC7jlyJbmJwqdLCv2QS1CnDPLRgeW9PZorCF8vGFrbk44J2vnUDqqeXgziok3jO8lKWdO0hQcSUfNLlUnXyiufouPnR9zqS1x19HwaamM61JzljDJV";
+        window.__genspark_locale = "en-US";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDk+3k1rWeyrdrn4iOYwOQkguU9/gnsxhXcjZhDZ/Z3wiONVwAaiZsnw2H9Cmo6r5sPIhPg9zVEJFqqKI0bhglWJPlhM656R+I3/4oLmgPu7Bf4kVFOztE6J2AL6SWz60w9GU8bblm290lv55ebV8hPHESrv66KlTbI1IyoUhEFPz4rtZHfhlTVmQRwDm70Kx7BB2t3socliO6Q/CKEVh/2dbxYLOnrRQWbD6QhcFpOrSHWFueJbqemb7C7xD1ipDQfL7ucfmnVkXIcAHV8wVjkDTA0d6GlmeE/DchH7Nd5X5Lwy+2EW2pMTlN1BUpEFylkGQ5i5QKC5ucDRV1h3R0XSsQracFoMGxrSf3QXOMCu9gveIxswLGwiJ3NWCrwgLyf8verNXmZwiaYtmJUvK4BhmJYM7YxSoAh0Eor6XmBZ6H8INLY7lc6G05sWC7jlyJbmJwqdLCv2QS1CnDPLRgeW9PZorCF8vGFrbk44J2vnUDqqeXgziok3jO8lKWdO0hQcSUfNLlUnXyiufouPnR9zqS1x19HwaamM61JzljDJV";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
